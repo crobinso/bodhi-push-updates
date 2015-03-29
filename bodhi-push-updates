@@ -1,0 +1,126 @@
+#!/usr/bin/python
+
+"""
+Helper script that helps push all of the user's pending bodhi updates
+"""
+
+import getpass
+import os
+import sys
+
+import fedora.client
+from fedora.client.bodhi import BodhiClient
+
+
+def yes_or_no(msg):
+    while 1:
+        sys.stdout.write(msg)
+        inp = sys.stdin.readline()
+        if inp.startswith("y"):
+            return True
+        elif inp.startswith("n"):
+            return False
+
+
+def username():
+    return (os.environ.get("FAS_USERNAME", None) or getpass.getuser())
+
+
+def can_push_update(update):
+    """
+    If the update has reached its push time limit, return True.
+    Otherwise print a message and return False
+    """
+    if update["request"] == "stable":
+        print ("Build has already been requested for stable: %s" %
+               update["title"])
+        return False
+
+    for comment in update["comments"]:
+        if (comment["author"] == "bodhi" and
+            "can be pushed to stable now if the maintainer wishes" in
+            comment["text"]):
+            return True
+
+    print "Build hasn't reached stable timeout yet: %s" % update["title"]
+    return False
+
+
+def process_update(update):
+    """
+    Show some info about the update, and ask user if we should push it.
+    Defer pushing to later so we can batch everything.
+    """
+    print
+    print
+    print "Build: %s" % update["title"]
+    print "Karma: %s" % update["karma"]
+    print
+
+    for comment in update["comments"]:
+        if comment["author"] == "bodhi":
+            continue
+        if (comment["author"] == "taskotron" and
+            "PASSED" in comment["text"]):
+            continue
+
+        msg = "- Comment: author=%s" % comment["author"]
+        if comment["karma"] != "0":
+            msg += " (karma=%s)" % comment["karma"]
+        msg += ": " + comment["text"].replace("\n", " ")
+        print msg
+
+    print
+    return yes_or_no("Push this update? (y/n): ")
+
+
+def query_updates(bodhi):
+    return bodhi.query(mine=True, status="testing").toDict()["updates"]
+
+
+def main():
+    bodhi = BodhiClient('https://admin.fedoraproject.org/updates/',
+        username=username())
+    bodhi.timeout = 30
+
+    print "Querying for your pending updates..."
+    try:
+        allupdates = query_updates(bodhi)
+    except fedora.client.AuthError:
+        print "No auth ticket found, need password."
+        bodhi.password = getpass.getpass('Password for %s: ' % username())
+        allupdates = query_updates(bodhi)
+
+    if not allupdates:
+        print "No updates found, exiting."
+        return 0
+
+    askupdates = []
+    for update in allupdates:
+        if can_push_update(update):
+            askupdates.append(update)
+    if not askupdates:
+        print "No updates are ready to be pushed, exiting."
+        return 0
+
+    pushupdates = []
+    for update in askupdates:
+        if process_update(update):
+            pushupdates.append(update)
+    if not pushupdates:
+        print "No pushes requested, exiting."
+        return 0
+
+    print
+    print
+    for update in pushupdates:
+        print "Requesting %s for stable" % update["title"]
+        bodhi.request(update["title"], request="stable")
+
+    print
+    print "Done."
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
