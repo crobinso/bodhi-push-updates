@@ -57,10 +57,17 @@ def process_update(update):
     print "Karma: %s" % update["karma"]
     print
 
+    # If there's any taskotron failure, show all taskotron messages
+    has_taskotron_failure = any(
+        c["author"] == "taskotron" and
+        "FAIL" in c["text"] for
+        c in update["comments"])
+
     for comment in update["comments"]:
         if comment["author"] == "bodhi":
             continue
-        if (comment["author"] == "taskotron" and
+        if (not has_taskotron_failure and
+            comment["author"] == "taskotron" and
             "PASSED" in comment["text"]):
             continue
 

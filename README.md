@@ -7,7 +7,7 @@ Basically works like this:
 * For each appropriate update:
     * Show the update karma
     * Filter out bodhi process comments ('pushed to testing' etc.)
-    * Filter out PASSED taskotron messages
+    * Filter out taskotron messages if they have all PASSED
     * Show the remaining comments
     * Prompt the user if they'd like to push this update to stable
 * Push all the requested updates to stable
