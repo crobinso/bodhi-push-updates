@@ -1,4 +1,4 @@
-Helper script for pushing Fedora [bodhi](https://admin.fedoraproject.org/updates) updates from testing to stable. When you get emails that you're updates have hit the testing timeout and can be pushed to stable, run this script and interactively decide which updates you want to push.
+Helper script for pushing Fedora [bodhi](https://admin.fedoraproject.org/updates) updates from testing to stable. When you receive emails that your updates have hit the testing timeout and can be pushed to stable, run this script to interactively decide which updates you want to push.
 
 Basically works like this:
 
