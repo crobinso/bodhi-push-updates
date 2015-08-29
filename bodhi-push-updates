@@ -37,7 +37,7 @@ def can_push_update(update):
         return False
 
     for comment in update["comments"]:
-        if (comment["author"] == "bodhi" and
+        if (comment["user"]["name"] == "bodhi" and
             "can be pushed to stable now if the maintainer wishes" in
             comment["text"]):
             return True
@@ -59,19 +59,19 @@ def process_update(update):
 
     # If there's any taskotron failure, show all taskotron messages
     has_taskotron_failure = any(
-        c["author"] == "taskotron" and
+        c["user"]["name"] == "taskotron" and
         "FAIL" in c["text"] for
         c in update["comments"])
 
     for comment in update["comments"]:
-        if comment["author"] == "bodhi":
+        if comment["user"]["name"] == "bodhi":
             continue
         if (not has_taskotron_failure and
-            comment["author"] == "taskotron" and
+            comment["user"]["name"] == "taskotron" and
             "PASSED" in comment["text"]):
             continue
 
-        msg = "- Comment: author=%s" % comment["author"]
+        msg = "- Comment: author=%s" % comment["user"]["name"]
         if comment["karma"] != "0":
             msg += " (karma=%s)" % comment["karma"]
         msg += ": " + comment["text"].replace("\n", " ")
