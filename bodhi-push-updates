@@ -91,12 +91,7 @@ def main():
     bodhi.timeout = 30
 
     print "Querying for your pending updates..."
-    try:
-        allupdates = query_updates(bodhi)
-    except fedora.client.AuthError:
-        print "No auth ticket found, need password."
-        bodhi.password = getpass.getpass('Password for %s: ' % username())
-        allupdates = query_updates(bodhi)
+    allupdates = query_updates(bodhi)
 
     if not allupdates:
         print "No updates found, exiting."
@@ -122,7 +117,15 @@ def main():
     print
     for update in pushupdates:
         print "Requesting %s for stable" % update["title"]
-        bodhi.request(update["title"], request="stable")
+
+        while True:
+            try:
+                bodhi.request(update["title"], request="stable")
+                break
+            except fedora.client.AuthError:
+                print "No auth ticket found, need password."
+                bodhi.password = getpass.getpass('Password for %s: ' %
+                    username())
 
     print
     print "Done."
