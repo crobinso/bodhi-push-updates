@@ -97,6 +97,13 @@ def main():
         print "No updates found, exiting."
         return 0
 
+    print
+    print "All updates:"
+    for update in allupdates:
+        print "* %s" % update["title"]
+    print
+    print
+
     askupdates = []
     for update in allupdates:
         if can_push_update(update):
