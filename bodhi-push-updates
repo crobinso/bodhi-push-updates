@@ -86,7 +86,8 @@ def process_update(update):
 
 
 def query_updates(bodhi):
-    return bodhi.query(mine=True, status="testing").toDict()["updates"]
+    mine = bodhi.query(mine=True, status="testing").toDict()["updates"]
+    return [u for u in mine if u["release"]["state"] != "archived"]
 
 
 def main():
