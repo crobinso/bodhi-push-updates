@@ -42,7 +42,11 @@ def can_push_update(update):
             comment["text"]):
             return True
 
-    print "Build hasn't reached stable timeout yet: %s" % update["title"]
+    if int(update["karma"]) >= 3:
+        return True
+
+    print ("Build hasn't reached stable timeout or karma=3: %s" %
+           update["title"])
     return False
 
 
