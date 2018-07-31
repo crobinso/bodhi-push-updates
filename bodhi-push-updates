@@ -129,11 +129,11 @@ def main():
     print()
     print()
     for update in pushupdates:
-        print("Requesting %s for stable" % update["title"])
+        print("Requesting %s for batched" % update["title"])
 
         while True:
             try:
-                bodhi.request(update["title"], request="stable")
+                bodhi.request(update["title"], request="batched")
                 break
             except fedora.client.AuthError:
                 print("No auth ticket found, need password.")
