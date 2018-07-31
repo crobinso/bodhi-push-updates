@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 """
 Helper script that helps push all of the user's pending bodhi updates
@@ -6,15 +6,17 @@ Helper script that helps push all of the user's pending bodhi updates
 
 import getpass
 import os
+import re
 import sys
 
 import fedora.client
-from fedora.client.bodhi import BodhiClient
+from fedora.client.bodhi import Bodhi2Client
 
 
 def yes_or_no(msg):
     while 1:
         sys.stdout.write(msg)
+        sys.stdout.flush()
         inp = sys.stdin.readline()
         if inp.startswith("y"):
             return True
@@ -31,22 +33,22 @@ def can_push_update(update):
     If the update has reached its push time limit, return True.
     Otherwise print a message and return False
     """
-    if update["request"] == "stable":
-        print ("Build has already been requested for stable: %s" %
-               update["title"])
+    if update["request"] in ["stable", "batched"]:
+        print("Build has already been requested for stable/batched: %s" %
+              update["title"])
         return False
 
     for comment in update["comments"]:
         if (comment["user"]["name"] == "bodhi" and
-            "can be pushed to stable now if the maintainer wishes" in
-            comment["text"]):
+            re.search(r"This update has reached the .* karma threshold",
+                      comment["text"])):
             return True
 
     if int(update["karma"]) >= 3:
         return True
 
-    print ("Build hasn't reached stable timeout or karma=3: %s" %
-           update["title"])
+    print("Build hasn't reached the timeout or karma threshold: %s" %
+          update["title"])
     return False
 
 
@@ -55,11 +57,11 @@ def process_update(update):
     Show some info about the update, and ask user if we should push it.
     Defer pushing to later so we can batch everything.
     """
-    print
-    print
-    print "Build: %s" % update["title"]
-    print "Karma: %s" % update["karma"]
-    print
+    print()
+    print()
+    print("Build: %s" % update["title"])
+    print("Karma: %s" % update["karma"])
+    print()
 
     # If there's any taskotron failure, show all taskotron messages
     has_taskotron_failure = any(
@@ -79,9 +81,9 @@ def process_update(update):
         if comment["karma"] != "0":
             msg += " (karma=%s)" % comment["karma"]
         msg += ": " + comment["text"].replace("\n", " ")
-        print msg
+        print(msg)
 
-    print
+    print()
     return yes_or_no("Push this update? (y/n): ")
 
 
@@ -91,30 +93,29 @@ def query_updates(bodhi):
 
 
 def main():
-    bodhi = BodhiClient('https://admin.fedoraproject.org/updates/',
-        username=username())
+    bodhi = Bodhi2Client(username=username())
     bodhi.timeout = 30
 
-    print "Querying for your pending updates..."
+    print("Querying for your pending updates...")
     allupdates = query_updates(bodhi)
 
     if not allupdates:
-        print "No updates found, exiting."
+        print("No updates found, exiting.")
         return 0
 
-    print
-    print "All updates:"
+    print()
+    print("All updates:")
     for update in allupdates:
-        print "* %s" % update["title"]
-    print
-    print
+        print("* %s" % update["title"])
+    print()
+    print()
 
     askupdates = []
     for update in allupdates:
         if can_push_update(update):
             askupdates.append(update)
     if not askupdates:
-        print "No updates are ready to be pushed, exiting."
+        print("No updates are ready to be pushed, exiting.")
         return 0
 
     pushupdates = []
@@ -122,25 +123,25 @@ def main():
         if process_update(update):
             pushupdates.append(update)
     if not pushupdates:
-        print "No pushes requested, exiting."
+        print("No pushes requested, exiting.")
         return 0
 
-    print
-    print
+    print()
+    print()
     for update in pushupdates:
-        print "Requesting %s for stable" % update["title"]
+        print("Requesting %s for stable" % update["title"])
 
         while True:
             try:
                 bodhi.request(update["title"], request="stable")
                 break
             except fedora.client.AuthError:
-                print "No auth ticket found, need password."
+                print("No auth ticket found, need password.")
                 bodhi.password = getpass.getpass('Password for %s: ' %
                     username())
 
-    print
-    print "Done."
+    print()
+    print("Done.")
     return 0
 
 
