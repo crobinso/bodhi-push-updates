@@ -43,6 +43,10 @@ def can_push_update(update):
             re.search(r"This update has reached the .* karma threshold",
                       comment["text"])):
             return True
+        if (comment["user"]["name"] == "bodhi" and
+            re.search("can be pushed to stable now if the maintainer wishes",
+                      comment["text"])):
+            return True
 
     if int(update["karma"]) >= 3:
         return True
