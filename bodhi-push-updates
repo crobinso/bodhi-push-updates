@@ -137,7 +137,7 @@ def main():
 
         while True:
             try:
-                bodhi.request(update["title"], request="stable")
+                bodhi.request(update["updateid"], request="stable")
                 break
             except fedora.client.AuthError:
                 print("No auth ticket found, need password.")
