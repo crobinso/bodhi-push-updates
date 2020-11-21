@@ -10,7 +10,7 @@ import re
 import sys
 
 import fedora.client
-from fedora.client.bodhi import Bodhi2Client
+from bodhi.client.bindings import BodhiClient
 
 
 def yes_or_no(msg):
@@ -97,7 +97,7 @@ def query_updates(bodhi):
 
 
 def main():
-    bodhi = Bodhi2Client(username=username())
+    bodhi = BodhiClient(username=username())
     bodhi.timeout = 30
 
     print("Querying for your pending updates...")
